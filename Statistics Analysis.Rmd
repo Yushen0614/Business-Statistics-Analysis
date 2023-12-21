@@ -1,0 +1,540 @@
+---
+title: 'Business Statistics Final-Term Assessment IB94X0 2022-2023 #2'
+author: '2224040'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+---
+
+This is to certify that the work I am submitting is my own. All external references and sources are clearly acknowledged and identified within the contents. I am aware of the University of Warwick regulation concerning plagiarism and collusion.
+
+No substantial part(s) of the work submitted here has also been submitted by me in other assessments for accredited courses of study, and I acknowledge that if this has been done an appropriate reduction in the mark I might otherwise have received will be made.
+
+# Question 1
+
+## Section 1
+### Import Libraries
+```{r message=FALSE}
+# install.packages('Hmisc')
+# install.packages("ggpubr")
+library(tidyverse)
+library(emmeans) # for emmeans(), contrast(), pairs()
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(Hmisc) # for correlation functions
+library(ggpubr) # for ggarrange
+options(width=100)
+```
+
+### Data Preparation
+```{r}
+# Read data and reformat data from Characters to Factors
+food_df <- read.csv("2019-20-enforcement-data-food-hygiene.csv", stringsAsFactors = TRUE)
+
+# Structure
+#str(food_df)
+
+# Summary
+#summary(food_df)
+
+# Select the variables needed and create a new dataframe
+new_food_df <- food_df[, c(1:6, 19:24, 36)]
+
+# Create a new column. Because the establishments not yet rated and not in the programme are not what we are going to analyse, they are deducted.
+new_food_df <- new_food_df %>% mutate(EstratedforIntv =  food_df$Totalestablishments.includingnotyetrated.outside. - food_df$Establishmentsnotyetratedforintervention - food_df$Establishmentsoutsidetheprogramme) 
+
+str(new_food_df)
+summary(new_food_df)
+```
+### Create a plot that clearly shows the distribution across the Local Authorities (LAs) of the % of enforcement actions successfully achieved
+```{r warning=FALSE}
+# Change the type of variable from factor to numeric
+new_food_df$Total.ofInterventionsachieved.premisesratedA <- as.numeric(as.character(new_food_df$Total.ofInterventionsachieved.premisesratedA))
+
+# Distribution across the LAs
+ggplot(new_food_df, aes(x=Total.ofInterventionsachieved.premisesratedA.E.)) + geom_histogram(binwidth=1, color='#9DBEBB') + ggtitle("The Distribution of % of enforcement actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA.E., na.rm = TRUE)), colour="red") + labs(x="Proportion of Interventions Achieved(overall)") + theme(text=element_text(size=12))
+```
+
+```{r warning=FALSE}
+# Overall distribution across LAs by "Country"
+ggplot(new_food_df) + geom_histogram(aes(x=Total.ofInterventionsachieved.premisesratedA.E., fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA.E., na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=12))
+```
+```{r warning=FALSE}
+# Respective distribution across LAs by "Country"
+ggarrange(
+estratedA.country <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedA, fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("(A)The Distribution of % of enforcement \n actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedB.country <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedB, fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("(B)The Distribution of % of enforcement \n actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedB, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedC.country <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedC, fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("(C)The Distribution of % of enforcement \n actions successfully") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedC, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedD.country <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedD, fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("(D)The Distribution of % of enforcement \n actions successfully") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedD, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedE.country <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedE, fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("(E)The Distribution of % of enforcement \n actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedE, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)), common.legend = TRUE)
+```
+
+```{r warning=FALSE}
+# Overall distribution across LAs by "LATypes"
+ggplot(new_food_df) + geom_histogram(aes(x=Total.ofInterventionsachieved.premisesratedA.E., fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA.E., na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved")
+```
+
+```{r warning=FALSE}
+# Respective distribution across LAs by "LATypes"
+ggarrange(
+estratedA.latype <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedA, fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement \n actions successfully achieved rated A") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedB.latype <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedB, fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement \n actions successfully achieved rated B") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedB, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedC.latype <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedC, fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement \n actions successfully achieved rated C") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedC, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedD.latype <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedD, fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement \n actions successfully achieved rated D") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedD, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)),
+
+estratedE.latype <- ggplot(new_food_df) + geom_histogram(aes(x=new_food_df$Total.ofInterventionsachieved.premisesratedE, fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement \n actions successfully achieved rated E") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedE, na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved") + theme(text=element_text(size=6)), common.legend = TRUE)
+```
+
+### Whether employing more professional enforcement officers increases the likelihood of establishments successfully responding to enforcement actions. Examine whether there is a relationship between proportion of successful responses and the number of FTE food safety employees in each local authority
+```{r warning=FALSE}
+# Plot the regression line 
+ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedA.E., x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==-0.02), subtitle="Each point is a local authority. The shaded area shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm)
+
+ggarrange(
+#A
+scresp.by.emply.A <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedA, x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==0.05), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#B
+scresp.by.emply.B <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedB, x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==0.1), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#C
+scresp.by.emply.C <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedC, x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==-0.01), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#D
+scresp.by.emply.D <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedD, x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==-0.19), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#E
+scresp.by.emply.E <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedE, x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==0.03), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+common.legend = TRUE)
+
+# Calculate the correlation coefficients
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedA.E., ProfessionalFullTimeEquivalentPosts.occupied..)))
+
+#A
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedA, ProfessionalFullTimeEquivalentPosts.occupied..)))
+
+#B
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedB, ProfessionalFullTimeEquivalentPosts.occupied..)))
+
+#C
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedC, ProfessionalFullTimeEquivalentPosts.occupied..)))
+
+#D
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedD, ProfessionalFullTimeEquivalentPosts.occupied..)))
+
+#E
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedE, ProfessionalFullTimeEquivalentPosts.occupied..)))
+```
+
+```{r}
+#All
+m.scresp.by.emply <- lm(Total.ofInterventionsachieved.premisesratedA.E. ~ ProfessionalFullTimeEquivalentPosts.occupied.., data=new_food_df)
+summary(m.scresp.by.emply)
+
+cbind(coefficient=coef(m.scresp.by.emply), confint(m.scresp.by.emply))
+
+#A
+m.A.scresp.by.emply <- lm(Total.ofInterventionsachieved.premisesratedA ~ ProfessionalFullTimeEquivalentPosts.occupied.., data=new_food_df)
+summary(m.A.scresp.by.emply)
+
+cbind(coefficient=coef(m.A.scresp.by.emply), confint(m.A.scresp.by.emply))
+
+#B
+m.B.scresp.by.emply <- lm(Total.ofInterventionsachieved.premisesratedB ~ ProfessionalFullTimeEquivalentPosts.occupied.., data=new_food_df)
+summary(m.B.scresp.by.emply)
+
+cbind(coefficient=coef(m.B.scresp.by.emply), confint(m.B.scresp.by.emply))
+
+#C
+m.C.scresp.by.emply <- lm(Total.ofInterventionsachieved.premisesratedC ~ ProfessionalFullTimeEquivalentPosts.occupied.., data=new_food_df)
+summary(m.C.scresp.by.emply)
+
+cbind(coefficient=coef(m.C.scresp.by.emply), confint(m.C.scresp.by.emply))
+
+#D
+m.D.scresp.by.emply <- lm(Total.ofInterventionsachieved.premisesratedD ~ ProfessionalFullTimeEquivalentPosts.occupied.., data=new_food_df)
+summary(m.D.scresp.by.emply)
+
+cbind(coefficient=coef(m.D.scresp.by.emply), confint(m.D.scresp.by.emply))
+
+#E
+m.E.scresp.by.emply <- lm(Total.ofInterventionsachieved.premisesratedE ~ ProfessionalFullTimeEquivalentPosts.occupied.., data=new_food_df)
+summary(m.E.scresp.by.emply)
+
+cbind(coefficient=coef(m.E.scresp.by.emply), confint(m.E.scresp.by.emply))
+```
+ 
+### examine whether there is a relationship between proportion of successful responses and the number of employees as a proportion of the number of establishments in the local authority – essentially creating your own measure of how many food safety employees there are per establishment
+```{r warning=FALSE}
+# Create a new variable
+new_food_df <- new_food_df %>% mutate(Propofemplyest = ProfessionalFullTimeEquivalentPosts.occupied.. / EstratedforIntv) 
+
+#Overall
+ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedA.E., x=Propofemplyest)) + geom_point() + labs(x="The number of employees as a proportion of the number of establishments ", y="Proportion of successful responses",title = expression(r==0.21), subtitle="Each point is a local authority. The shaded area shows the 95% CI for the best-fitting regression line") + geom_smooth(method=lm)
+
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedA.E., Propofemplyest)))
+
+m.scresp.by.propemplyest <- lm(Total.ofInterventionsachieved.premisesratedA.E. ~ Propofemplyest, data=new_food_df)
+summary(m.scresp.by.propemplyest)
+
+cbind(coefficient=coef(m.scresp.by.propemplyest), confint(m.scresp.by.propemplyest))
+
+ggarrange(
+#A
+scresp.by.propemlyest.A <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedA, x=Propofemplyest)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==-0.08), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#B
+scresp.by.propemlyest.B <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedB, x=Propofemplyest)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==0.02), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#C
+scresp.by.propemlyest.C <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedC, x=Propofemplyest)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==0.13), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#D
+scresp.by.propemlyest.D <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedD, x=Propofemplyest)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==0.13), subtitle="Each point is a local authority. The shaded area \n shows the 95% CI for the best-fitting regression \n line") + geom_smooth(method=lm) + theme(text=element_text(size=6)),
+
+#E
+scresp.by.propemlyest.E <- ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedE, x=Propofemplyest)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses", title = expression(r==0.2), subtitle="Each point is a local authority. The shaded area shows the 95% CI for the best-fitting regression line") + geom_smooth(method=lm) + theme(text=element_text(size=6)))
+
+
+#A
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedA, Propofemplyest)))
+
+m.A.scresp.by.propemplyest <- lm(Total.ofInterventionsachieved.premisesratedA ~ Propofemplyest, data=new_food_df)
+summary(m.A.scresp.by.propemplyest)
+
+cbind(coefficient=coef(m.A.scresp.by.propemplyest), confint(m.A.scresp.by.propemplyest))
+
+#B
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedB, Propofemplyest)))
+
+m.B.scresp.by.propemplyest <- lm(Total.ofInterventionsachieved.premisesratedB ~ Propofemplyest, data=new_food_df)
+summary(m.B.scresp.by.propemplyest)
+
+cbind(coefficient=coef(m.B.scresp.by.propemplyest), confint(m.B.scresp.by.propemplyest))
+
+#C
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedC, Propofemplyest)))
+
+m.C.scresp.by.propemplyest <- lm(Total.ofInterventionsachieved.premisesratedC ~ Propofemplyest, data=new_food_df)
+summary(m.C.scresp.by.propemplyest)
+
+cbind(coefficient=coef(m.C.scresp.by.propemplyest), confint(m.C.scresp.by.propemplyest))
+
+#D
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedD, Propofemplyest)))
+
+m.D.scresp.by.propemplyest <- lm(Total.ofInterventionsachieved.premisesratedD ~ Propofemplyest, data=new_food_df)
+summary(m.D.scresp.by.propemplyest)
+
+cbind(coefficient=coef(m.D.scresp.by.propemplyest), confint(m.D.scresp.by.propemplyest))
+
+#E
+rcorr(as.matrix(select(new_food_df, Total.ofInterventionsachieved.premisesratedE, Propofemplyest)))
+
+m.E.scresp.by.propemplyest <- lm(Total.ofInterventionsachieved.premisesratedE ~ Propofemplyest, data=new_food_df)
+summary(m.E.scresp.by.propemplyest)
+
+cbind(coefficient=coef(m.E.scresp.by.propemplyest), confint(m.E.scresp.by.propemplyest))
+
+```
+
+---
+
+## Section 2
+This report presents the results of the analyses requested by the Food Standards Agency. This used the data provided for 353 local authorities.
+
+First, let's see the distribution across the Local Authorities(LAs) of the % of enforcement actions successfully achieved. It is a left-skewed histogram, with 86.62% average % of enforcement actions successfully achieved. We can clearly see that most of the enforcement actions are successfullly achieved.
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(new_food_df, aes(x=Total.ofInterventionsachieved.premisesratedA.E.)) + geom_histogram(binwidth=1, color='#9DBEBB') + ggtitle("The Distribution of % of enforcement actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA.E., na.rm = TRUE)), colour="red") + labs(x="Total.ofInterventionsachieved")
+```
+
+The following graph shows overall distribution across LAs by different "Country". We can see that England is the majority country, and many of the Northern Ireland actions are successfully achieved.
+
+```{r echo=FALSE, warning=FALSE}
+ggplot(new_food_df) + geom_histogram(aes(x=Total.ofInterventionsachieved.premisesratedA.E., fill=Country ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA.E., na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved")
+```
+
+The following graph shows respective distribution of establishments rated from A to E across LAs by different "Country". All of them are left-skewed histograms, showing similar distributions to the overall(A to E) distribution.
+
+```{r echo=FALSE, warning=FALSE}
+ggarrange(estratedA.country, estratedB.country, estratedC.country, estratedD.country, estratedE.country, common.legend = T)
+```
+
+The following graph shows overall distribution across LAs by different "LATypes". We can see that District Council is the majority type, and the number of cases in Welsh Unitary Authority is the least.
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(new_food_df) + geom_histogram(aes(x=Total.ofInterventionsachieved.premisesratedA.E., fill=LAType ), alpha=0.7, color='black', binwidth=2.5) + ggtitle("The Distribution of % of enforcement actions successfully achieved") + geom_vline(aes(xintercept = mean(new_food_df$Total.ofInterventionsachieved.premisesratedA.E., na.rm = TRUE)), colour="#474647") + labs(x="The % of Interventions achieved")
+```
+
+The following graph shows respective distribution of establishments rated from A to E across LAs by different "LATypes"
+```{r echo=FALSE, warning=FALSE}
+ggarrange(estratedA.latype, estratedB.latype, estratedC.latype, estratedD.latype, estratedE.latype, common.legend = T)
+```
+
+Next, we plot the regression line to see the relation between FTE food safety employees and the proportion of successful responses.
+```{r echo=FALSE, warning=FALSE}
+ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedA.E., x=ProfessionalFullTimeEquivalentPosts.occupied.., alpha=0.3)) + geom_point() + labs(x="FTE food safety employees", y="Proportion of successful responses",title = expression(r==-0.02), subtitle="Each point is a local authority. The shaded area shows the 95% CI for the best-fitting regression line") + geom_smooth(method=lm)
+```
+
+And we further look at the relation between FTE food safety employees and the proportion of successful responses for establishments rated from A to E.
+```{r}
+ggarrange(scresp.by.propemlyest.A, scresp.by.propemlyest.B, scresp.by.propemlyest.C, scresp.by.propemlyest.D, scresp.by.propemlyest.E)
+```
+
+Overall(A to E): For every extra FTE food safety employees, 0.12 lower proportion of successful responses is achieved 95% CI [-0.65–0.41]. The FTE food safety employees explains 0.06% of the variance in proportion of successful responses.
+
+A: For every extra FTE food safety employees, 0.15 greater proportion of successful responses is achieved 95% CI [-0.18–0.47]. The FTE food safety employees explains 0.25% of the variance in proportion of successful responses.
+
+B: For every extra FTE food safety employees, 0.27 greater proportion of successful responses is achieved 95% CI [-0.02–0.56]. The FTE food safety employees explains 0.98% of the variance in proportion of successful responses.
+
+C: For every extra FTE food safety employees, 0.02 lower proportion of successful responses is achieved 95% CI [-0.42–0.37]. The FTE food safety employees explains <0.01% of the variance in proportion of successful responses.
+
+D: For every extra FTE food safety employees, 1.11 lower proportion of successful responses is achieved 95% CI [-1.72–0.51]. The FTE food safety employees explains 3.69% of the variance in proportion of successful responses.
+
+E: For every extra FTE food safety employees, 0.31 greater proportion of successful responses is achieved 95% CI [-0.72–1.33]. The FTE food safety employees explains 0.10% of the variance in proportion of successful responses.
+
+According to the analysis above, we can see that there is no significant relationship between FTE food safety employees and proportion of successful responses. The increase is not different from zero, t(345)=-0.447, p=0.655. Therefore, it is not recommended to use FTE food safety employees to predict proportion of successful responses.
+
+Next, the regression line below is aimed to see the relationship between proportion of successful responses and the number of employees as a proportion of the number of establishments in the local authority
+```{r echo=FALSE, warning=FALSE}
+ggplot(new_food_df, aes(y=Total.ofInterventionsachieved.premisesratedA.E., x=Propofemplyest)) + geom_point() + labs(x="The number of employees as a proportion of the number of establishments ", y="Proportion of successful responses",title = expression(r==0.21), subtitle="Each point is a local authority. The shaded area shows the 95% CI for the best-fitting regression line") + geom_smooth(method=lm)
+```
+
+And we look at the relationship between proportion of successful responses and the number of employees as a proportion of the number of establishments in the local authority for establishments rated from A to E.
+```{r echo=FALSE, warning=FALSE}
+ggarrange(scresp.by.propemlyest.A, scresp.by.propemlyest.B, scresp.by.propemlyest.C, scresp.by.propemlyest.D , scresp.by.propemlyest.E)
+```
+
+From the result of the models, we can see 
+Overall(A to E): For every extra number of employees as a proportion of the number of establishments, 2407.40 greater proportion of successful responses is achieved 95% CI [1193.72–3621.06]. The number of employees as a proportion of the number of establishments explains 4.22% of the variance in proportion of successful responses.
+
+A: For every extra number of employees as a proportion of the number of establishments, -533.30 lower proportion of successful responses is achieved 95% CI [-1290.00–223.40]. The number of employees as a proportion of the number of establishments explains 0.60% of the variance in proportion of successful responses.
+
+B: For every extra number of employees as a proportion of the number of establishments, 128.59 greater proportion of successful responses is achieved 95% CI [-555.06–812.25]. The number of employees as a proportion of the number of establishments explains 0.04% of the variance in proportion of successful responses.
+
+C: For every extra number of employees as a proportion of the number of establishments, 1169.56 greater proportion of successful responses is achieved 95% CI [250.03–2089.01]. The number of employees as a proportion of the number of establishments explains 1.78% of the variance in proportion of successful responses.
+
+D: For every extra number of employees as a proportion of the number of establishments, 1736.63 greater proportion of successful responses is achieved 95% CI [302.88–3170.38]. The number of employees as a proportion of the number of establishments explains 1.62% of the variance in proportion of successful responses.
+
+E: For every extra number of employees as a proportion of the number of establishments, 4444.40 greater proportion of successful responses is achieved 95% CI [2080.12–6808.69]. The number of employees as a proportion of the number of establishments explains 3.81% of the variance in proportion of successful responses.
+
+According to the analysis above, we can see that there is significant relationship between number of employees as a proportion of the number of establishments rated(overall) and proportion of successful responses. The increase is significantly different from zero, t(345)=3.90, p<.001. Therefore, it is reasonable to use number of employees as a proportion of the number of establishments rated to predict proportion of successful responses.
+
+---
+
+# Question 2
+
+## Section 1
+
+### Import Libraries
+```{r}
+# install.packages('Hmisc')
+library(tidyverse)
+library(emmeans)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(Hmisc)
+library(RColorBrewer)
+library(car)
+options(width=100)
+```
+
+### Data Preparation
+```{r}
+# Import dataset and transform character variables into factor
+pub_df <- read.csv('publisher_sales.csv', stringsAsFactors = TRUE)
+
+# Summarise data for more information and check data types to ensure appropriateness
+str(pub_df)
+
+summary(pub_df)
+
+# Remove an unreasonable value
+pub_df <- pub_df %>% filter(daily.sales >= 0)
+
+summary(pub_df)
+# Confirm whether there is na values again
+sum(is.na(pub_df))
+```
+
+### Examine whther books from different genres have different daily sales on average
+
+One-Way ANOVA
+```{r}
+pub_df %>% group_by(genre) %>% summarise(n())
+m.sales.by.genre <- lm(daily.sales~genre, data=pub_df)
+anova(m.sales.by.genre)
+( m.sales.by.genre.emm <- emmeans(m.sales.by.genre, ~genre) )
+( m.sales.by.genre.pairs <- confint(pairs(m.sales.by.genre.emm)) )
+```
+
+Presenting a One-Way ANOVA
+```{r}
+p.sales <- ggplot(summary(m.sales.by.genre.emm), aes(x=genre, y=emmean, ymin=lower.CL, ymax=upper.CL)) + geom_point() + geom_linerange() + labs(x="Genres ", y="Daily Sales", title = "CI for Daily Sales by Genres", subtitle="Error Bars are Extent of 95% CIs")
+
+p.contrasts <- ggplot(m.sales.by.genre.pairs, aes(x=contrast, y=estimate, ymin=lower.CL, ymax=upper.CL)) + geom_point() + geom_linerange() + geom_hline(yintercept=0, lty=2) + labs(x="Contrast", y="Difference in Average Daily Sales", title = "CI for Daily Sales by  \n Difference between Genres", subtitle="Error Bars are Extent of 95% CIs") + theme(axis.text.x = element_text(angle = 10))
+
+grid.arrange(p.sales, p.contrasts, ncol=2)
+```
+
+
+### Check whether books have more/fewer sales depending upon their average review scores and total number of reviews.
+```{r}
+# Predicting average daily slaes from both average review and total reviews
+m.sales.by.avg.total.review <- lm(daily.sales ~ avg.review + total.reviews, data = pub_df)
+summary(m.sales.by.avg.total.review)
+
+# Check multicollinearity again
+vif(m.sales.by.avg.total.review)
+
+# Show the effect of one variable with the other variables held constant
+sales.preds <- tibble(avg.review = unlist(expand.grid(seq(0, 5, 1), seq(0, 250, 5))[1]), total.reviews = unlist(expand.grid(seq(0, 5, 1), seq(0, 250, 5))[2]))
+
+sales.preds <- mutate(sales.preds, Sales.hat = predict(m.sales.by.avg.total.review, sales.preds))
+
+ggplot(sales.preds, aes(avg.review, total.reviews)) + geom_contour_filled(aes(z = Sales.hat)) + guides(fill=guide_legend(title="Sales"))
+
+# Get the confidence intervals for the estimation approach
+cbind(coefficient=coef(m.sales.by.avg.total.review), confint(m.sales.by.avg.total.review))
+```
+
+```{r}
+# interaction
+m.intr <- lm(daily.sales ~ avg.review*total.reviews, data = pub_df)
+summary(m.intr)
+
+intr.surf <- tibble(avg.review = unlist(expand.grid(seq(0, 5, 1), seq(0, 250, 5))[1]), total.reviews = unlist(expand.grid(seq(0, 5, 1), seq(0, 250, 5))[2]))
+
+intr.surf <- mutate(intr.surf, intr.hat = predict(m.intr, intr.surf))
+
+ggplot(intr.surf, aes(avg.review, total.reviews)) + geom_contour_filled(aes(z = intr.hat)) + labs(subtitle = "Interaction Effects of Avg.review and Total.reviews") + guides(fill=guide_legend(title="Sales"))
+```
+
+### Examine what is the effect of sale price upon the number of sales
+```{r}
+# Calculate correlation coefficients
+rcorr(as.matrix(select(pub_df, daily.sales, sale.price)))
+
+ggplot(pub_df, aes(x=sale.price, y=daily.sales, alpha = 0.1)) + geom_point() + labs(y="Number of Sales Daily", x="Sale Price", title=expression(r==-0.28), subtitle="The effect of sale price upon the number of sales") + geom_smooth(method=lm)
+```
+
+```{r}
+m.dsales.by.price <- lm(daily.sales~sale.price, data=pub_df)
+summary(m.dsales.by.price)
+```
+
+```{r}
+# Get the confidence intervals for the estimation approach
+cbind(coefficient = coef(m.dsales.by.price), confint(m.dsales.by.price))
+```
+
+Is this (the effect of sale price upon the number of sales) different across genres?
+```{r}
+ggplot(pub_df, aes(x=sale.price, y=daily.sales, alpha = 0.1)) + geom_point() + labs(y="Number of Sales Daily", x="Sale Price", subtitle="The effect of sale price upon the number of sales") + geom_smooth(method=lm) + facet_wrap(~ genre)
+```
+
+```{r}
+# Filter by genre
+child_df <- pub_df %>%
+  filter(genre == "childrens")
+
+fic_df <- pub_df %>%
+  filter(genre == "fiction")
+
+nonf_df <- pub_df %>%
+  filter(genre == "non_fiction")
+```
+
+```{r}
+# Calculate correlation coefficients
+rcorr(as.matrix(select(child_df, daily.sales, sale.price)))
+
+rcorr(as.matrix(select(fic_df, daily.sales, sale.price)))
+
+rcorr(as.matrix(select(nonf_df, daily.sales, sale.price)))
+```
+
+```{r}
+# Build linear regression models
+m.child.dsales.by.price <- lm(daily.sales~sale.price, data=child_df)
+summary(m.child.dsales.by.price)
+
+m.fic.dsales.by.price <- lm(daily.sales~sale.price, data=fic_df)
+summary(m.fic.dsales.by.price)
+
+m.nonf.by.price <- lm(daily.sales~sale.price, data=nonf_df)
+summary(m.nonf.by.price)
+```
+```{r}
+# Get the confidence intervals for the estimation approach
+cbind(coef(m.child.dsales.by.price), confint(m.child.dsales.by.price))
+
+cbind(coef(m.fic.dsales.by.price), confint(m.fic.dsales.by.price))
+
+cbind(coef(m.nonf.by.price), confint(m.nonf.by.price))
+```
+
+---
+
+## Section 2
+
+This report demonstrates the results of the analyses from the dataset of publishing company. The total number of the sales records in the data is 6000. There was only one inaccurate data in the dataset and has been removed, leaving 5999 records. 
+
+First, we look at the summary of the sales records distinguished by genres.
+```{r echo=FALSE}
+pub_df %>% group_by(genre) %>% summarise(n()) %>%
+kbl(caption = "Table 1. Summary of sales records across genres") %>%
+  kable_styling()
+```
+A one-way ANOVA tests whether the variable genre has a significant effect on the daily sales. We can say “The daily sales differs significantly across the genre of books, F(2,5996)=2594.7, p<0.001. 
+
+It was also found that fiction books have the highest average sales(105.9), followed by  non_fiction(75.9), and children has the lowest daily sales children(55.6). The estimates of the difference in daily sales for each pair of genres is demonstrated in the right panel below. The estimate for the childrens-fiction comparison shows a point estimate of 50.3 daily sales greater gain for fiction, which is the greatest difference in the three pairs. And the 95% CI spans sales greater for fiction from 48.7 to 52; the estimate for the childrens-non_fiction comparison shows a point estimate of 20.3 daily sales greater gain for non_fiction, and the 95% CI spans sales greater for non_fiction from 18.7 to 22; the estimate for the fiction-non_fiction comparison shows a point estimate of 30 daily sales greater gain for fiction, and the 95% CI spans sales greater for fiction from 28.3 to 31.6.
+
+```{r echo=FALSE}
+grid.arrange(p.sales, p.contrasts, ncol=2)
+```
+
+```{r echo=FALSE}
+ggplot(sales.preds, aes(avg.review, total.reviews)) + geom_contour_filled(aes(z = Sales.hat)) + labs(title = "Interaction Effects of Avg.review and Total.reviews") +  guides(fill=guide_legend(title="Sales"))
+```
+
+Next, a model was built to look into whether books have more sales depending upon their average review scores and total number of reviews.
+
+From the results, we can see the number of average daily sales decreases by a statistically significant 4, t(5996)=-7.80, p<.0001, for every extra increase in average review score, holding the total number of reviews constant. 
+
+When controlling for the average review scores, the average number of sales increases by 0.54 for every extra review, which is significantly different from zero t(5996)=69.52, p<.0001.
+
+And we also calculate the confidence intervals for the estimation approach because it gives us more information. The number of average daily sales decreases by 4.00, 95% CI [-5.00, -3.00] for every extra average review score; the number of average daily sales increases by 0.54, 95% CI [0.53, 0.56] for every extra review.
+
+```{r echo=FALSE}
+ggplot(intr.surf, aes(avg.review, total.reviews)) + geom_contour_filled(aes(z = intr.hat)) + labs(title = "Interaction Effects of Avg.review and Total.reviews") + guides(fill=guide_legend(title="Sales"))
+```
+
+Sometimes, we may encounter situations that the effect of a predictor is different depending upon the value of another variable. Therefore, we would like to build a new model to see the interaction between average review scores and the total number of reviews. The result shows that there is a  a significant positive interaction between them. This means that when the value of average review scores is higher, a slight increase in the total number of reviews will lead to massive rise in sales.
+
+```{r echo=FALSE}
+ggplot(pub_df, aes(x=sale.price, y=daily.sales, alpha = 0.1)) + geom_point() + labs(y="Number of Sales Daily", x="Sale Price", title=expression(r==-0.28), subtitle="The effect of sale price upon the number of sales") + geom_smooth(method=lm)
+```
+
+Next, a model was built to look into the effect a unit change in sale price (on the x axis) has on the number of sales. From the reslut, we see that the number of sales decreases 3.81 for extra every extra unit of sale price, and the sale price explains 7.7% variance in number of average daily sales. The decrease is significantly different from zero, t(5997)=-22.36, p<.0001. Therefore, it is reasonable to use sales price to predict average daily sales.
+
+```{r echo=FALSE}
+ggplot(pub_df, aes(x=sale.price, y=daily.sales, alpha = 0.1)) + geom_point() + labs(y="Number of Sales Daily", x="Sale Price", subtitle="The effect of sale price upon the number of sales") + geom_smooth(method=lm) + facet_wrap(~ genre)
+```
+
+We can see the correlation between sale price and number of average daily sales across different genres are all negative. It indicates that an increase in sale price has a negative impact on the number of sales regardless of book genre; however, they are just slightly related. For every extra unit of sale price in children type, 1.73 lower number of sales is sold 95% CI [1.42–2.05], and it explains 5.52% of the variance in daily sales; for every extra unit of sale price in fiction type, 0.27 lower number of sales is sold 95% CI [-0.94–0.39], and it explains 0.03% of the variance in daily sales; For every extra unit of sale price in non_fiction type, 0.43 lower number of sales is sold 95% CI [-0.86–0.01], and it explains 1.86% of the variance in daily sales.
+
+Based on the result from the built linear models, only the children type effect of sale price upon average daily sales is significant, t(1998)=-10.8, p<0.0001. The effect of sale price upon the number of sales from the other two types are not significant.
+
+---
